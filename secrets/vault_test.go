@@ -3,8 +3,9 @@ package secrets_test
 import (
 	"context"
 	"testing"
-	"github.com/tvastar/goat/secrets"
+
 	"github.com/tvastar/goat"
+	"github.com/tvastar/goat/secrets"
 )
 
 func TestVault(t *testing.T) {
@@ -62,7 +63,7 @@ func createTestVault(t *testing.T) (*api.Config, string) {
 	if err != nil {
 		t.Fatal("could not enable secrets engine", err)
 	}
-	
+
 	return conf, cluster.RootToken
 }
 */

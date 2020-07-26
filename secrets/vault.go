@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"sync"
+
 	vault "github.com/hashicorp/vault/api"
 )
 
@@ -38,11 +39,11 @@ import (
 // foo/encrypt/my-key and foo/decrypt/my-key respectively.
 type Vault struct {
 	*vault.Config
-	Token string
+	Token       string
 	EncryptPath string
 	DecryptPath string
-	c *vault.Client
-	mu sync.Mutex
+	c           *vault.Client
+	mu          sync.Mutex
 }
 
 // Encrypt encrypts using vault.
@@ -91,9 +92,3 @@ func (v *Vault) initClient() (*vault.Client, error) {
 	}
 	return c, err
 }
-
-
-
-
-
-
