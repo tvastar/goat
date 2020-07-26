@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
-	"golang.org/x/oauth2"
 	"log"
 	"math/rand"
 	"net/http"
 	"os"
+
+	"github.com/pkg/errors"
+	"golang.org/x/oauth2"
 )
 
 // Paths contains the paths for a single provider.

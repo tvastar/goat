@@ -3,13 +3,14 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/tvastar/goat"
-	"gopkg.in/yaml.v3"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/tvastar/goat"
+	"gopkg.in/yaml.v3"
 )
 
 type Config struct {

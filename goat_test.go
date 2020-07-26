@@ -1,15 +1,13 @@
 package goat_test
 
-import "net/http/httputil"
-
 import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/oauth2"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"net/http/httputil"
 	"net/url"
 	"os"
 	"strings"
@@ -17,6 +15,7 @@ import (
 	"time"
 
 	"github.com/tvastar/goat"
+	"golang.org/x/oauth2"
 )
 
 func TestAll(t *testing.T) {
