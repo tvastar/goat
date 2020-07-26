@@ -69,6 +69,10 @@ file must be updated to specify a valid provider and then one should
 visit the following url in the browser
 [http://localhost:8085/sheets/url?redirect_url=http://www.google.com](http://localhost:8085/sheets/url?redirect_url=http://www.google.com).
 
+The URL above should walk through the consent flow and end up on
+google.  At this point, the current token can be fetched by visiting
+[this url](http://localhost:8085/sheets/token)
+
 ## Sample Config file
 
 The following is a sample config file for this service:
