@@ -39,14 +39,75 @@ configured by the client in step 3.
 7. The client detects that the consent flow has completed
 successfully and then initiates step 1 again, which will now succeed.
 
-## Goat configuration
+## Goat integration
 
 Goat requires a session storage, a token storage and an encryption
 engine.
 
+A Redis-based session storage engine is implemented in the ./sessions
+package.
+
+A [entgo.io](https://entgo.io/) based token storage is implemented in
+the ./tokens package.
+
+A [vault](https://github.com/hashicorp/vault/) based encryption engine
+is implemented in the ./secrets package (where vault is used as a
+secrets transit engine rather than actual storage).
+
+All of these are optional with custom implementations possible. An
+[example](https://github.com/tvastar/goat/blob/master/cmd/goat/goat.go)
+which pulls these together is provided along with its [assocciated config](https://github.com/tvastar/goat/blob/master/cmd/goat/config.yaml.sample)
+
+This example requires a local redis and a local vault. The token
+storage uses an in-memory sqllite3 DB.  The example and the associated
+redis/vault containers can be launched via the `./scripts/run.sh`
+script.
+
+For the example to work, the
+[config.yaml.sample](https://github.com/tvastar/goat/blob/master/cmd/goat/config.yaml.sampl)
+file must be updated to specify a valid provider and then one should
+visit the following url in the browser
+[http://localhost:8085/sheets/url?redirect_url=http://www.google.com](http://localhost:8085/sheets/url?redirect_url=http://www.google.com).
+
+## Sample Config file
+
+The following is a sample config file for this service:
+
+```yaml
+httpport: 8085
+providers:
+  - name: sheets
+    paths:
+      consent: /sheets/url
+      code: /sheets/code
+      setrefreshtoken: /sheets/setRefreshToken
+      getaccesstoken: /sheets/token
+    config:
+      endpoint:
+        authurl: https://accounts.google.com/o/oauth2/auth
+        tokenurl: https://oauth2.googleapis.com/token
+      clientid: <your google API project client_id>
+      clientsecret: <your google API project client_secret>
+      redirecturl: http://localhost:8085/sheets/code
+      scopes: ["email"]
+tokens:
+  dbsource: "file:ent?mode=memory&cache=shared&_fk=1"
+  dbtype: sqlite3
+sessions:
+  ttl: 30s
+  options:
+    addr: "localhost:6379"
+secrets:
+  encryptpath: transit/encrypt/goat
+  decryptpath: transit/decrypt/goat
+```
+
 ## Running the tests
 
-The ./secrets folder requires vault to be running:
+Tests can be run locally via the `./scripts/test.sh` script (which
+launches the required docker images and such.
+
+The following manual process can be used to setup the vault container:
 
 ```bash
 docker run --rm --cap-add=IPC_LOCK -e VAULT_DEV_ROOT_TOKEN_ID=hello --name=dev-vault -p 8200:8200 vault:1.5.0

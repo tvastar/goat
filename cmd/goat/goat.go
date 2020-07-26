@@ -1,7 +1,19 @@
+// This command demonstrates how to run a goat server.
+//
+// Goat requires a tokens storage, a session storage and an
+// enccryption engine.  This example uses the ent-based token storage
+// (against sqlite3), a REDIS based sessions store and a vault based
+// secret encryption engine.
+//
+// All of this can be configured neatly via the sample yaml in this
+// directory.
+//
+// Launch this program with the sample yaml as an argument and then
+// hit the following URL in the browser
+// http://localhost:8085/sheets/url?redirect_url=http://www.google.com
 package main
 
 import (
-	"context"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -10,12 +22,20 @@ import (
 	"time"
 
 	"github.com/tvastar/goat"
+	"github.com/tvastar/goat/secrets"
+	"github.com/tvastar/goat/sessions"
+	"github.com/tvastar/goat/tokens"
+
+	_ "github.com/mattn/go-sqlite3"
 	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
 	Providers []*goat.Provider
 	HTTPPort  int
+	Tokens    tokens.Tokens
+	Secrets   secrets.Vault
+	Sessions  sessions.Redis
 }
 
 func main() {
@@ -36,9 +56,9 @@ func main() {
 		Handler: goat.Handler{
 			Providers:         c.Providers,
 			AuthenticatedUser: authenticatedUser,
-			Tokens:            &memstore{items: map[[2]string][]byte{}},
-			Sessions:          &memstore{items: map[[2]string][]byte{}},
-			Secrets:           &secrets{},
+			Tokens:            &c.Tokens,
+			Sessions:          &c.Sessions,
+			Secrets:           &c.Secrets,
 		},
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
@@ -49,30 +69,4 @@ func main() {
 
 func authenticatedUser(r *http.Request) (string, error) {
 	return "foo", nil
-}
-
-type memstore struct {
-	items map[[2]string][]byte
-}
-
-func (m *memstore) Get(_ context.Context, provider, key string) ([]byte, error) {
-	if v, ok := m.items[[2]string{provider, key}]; ok {
-		return v, nil
-	}
-	return nil, os.ErrNotExist
-}
-
-func (m *memstore) Set(_ context.Context, provider, key string, data []byte) error {
-	m.items[[2]string{provider, key}] = data
-	return nil
-}
-
-type secrets struct{}
-
-func (s *secrets) Encrypt(_ context.Context, data []byte) ([]byte, error) {
-	return data, nil
-}
-
-func (s *secrets) Decrypt(_ context.Context, data []byte) ([]byte, error) {
-	return data, nil
 }

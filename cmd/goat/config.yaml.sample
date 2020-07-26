@@ -1,0 +1,26 @@
+httpport: 8085
+providers:
+  - name: sheets
+    paths:
+      consent: /sheets/url
+      code: /sheets/code
+      setrefreshtoken: /sheets/setRefreshToken
+      getaccesstoken: /sheets/token
+    config:
+      endpoint:
+        authurl: https://accounts.google.com/o/oauth2/auth
+        tokenurl: https://oauth2.googleapis.com/token
+      clientid: <your google API project client_id>
+      clientsecret: <your google API project client_secret>
+      redirecturl: http://localhost:8085/sheets/code
+      scopes: ["email"]
+tokens:
+  dbsource: "file:ent?mode=memory&cache=shared&_fk=1"
+  dbtype: sqlite3
+sessions:
+  ttl: 30s
+  options:
+    addr: "localhost:6379"
+secrets:
+  encryptpath: transit/encrypt/goat
+  decryptpath: transit/decrypt/goat
