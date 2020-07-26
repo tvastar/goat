@@ -178,7 +178,7 @@ func (h Handler) handleConsent(r *http.Request, user string, p *Provider) (inter
 		return nil, errors.New("missing redirect_url"), http.StatusBadRequest
 	}
 
-	state := fmt.Sprintf("%x-%x-%s", rand.Int63(), rand.Int63())
+	state := fmt.Sprintf("%x-%x", rand.Int63(), rand.Int63())
 	if err := h.Sessions.Set(r.Context(), p.Name, state, []byte(redirectURL)); err != nil {
 		return nil, err, http.StatusInternalServerError
 	}
@@ -228,7 +228,7 @@ func (h Handler) handleSetRefreshToken(r *http.Request, user string, p *Provider
 		return nil, err, http.StatusInternalServerError
 	}
 
-	return map[bool]bool{}, nil, http.StatusOK
+	return map[string]string{}, nil, http.StatusOK
 }
 
 func (h Handler) handleGetAccessToken(r *http.Request, user string, p *Provider) (interface{}, error, int) {

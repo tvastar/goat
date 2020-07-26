@@ -23,7 +23,7 @@ flow with the oauth provider.  The browser client redirects the user
 to the Goat server consent endpoint for that provider.
 
 4. Goat calculates a nonce to prevent CSRF attacks, saves the redirect
-URL to the session store and then redirects the browser to the actuan
+URL to the session store and then redirects the browser to the actual
 consent page of the oauth provider.
 
 5. When the user completes the consent flow of the oauuth provider,
