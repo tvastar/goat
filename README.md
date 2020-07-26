@@ -44,7 +44,33 @@ successfully and then initiates step 1 again, which will now succeed.
 Goat requires a session storage, a token storage and an encryption
 engine.
 
+## Running the tests
+
+The ./secrets folder requires vault to be running:
+
+```bash
+docker run --rm --cap-add=IPC_LOCK -e VAULT_DEV_ROOT_TOKEN_ID=hello --name=dev-vault -p 8200:8200 vault:1.5.0
+```
+
+In addition, the example expects vault to be configured as a transit
+engine and a keyring:
+
+```bash
+docker exec -it $(docker ps -q -f name=dev-vault) sh -c 'VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN=hello vault secrets
+enable transit'
+docker exec -it $(docker ps -q -f name=dev-vault) sh -c 'VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN=hello vault write -f transit/keys/goat'
+```
+
+
+Now the tests can be run using:
+
+```bash
+VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN=hello go test ./...
+```
+
 ## Example
 
-See cmd/goat/goat.go for an example server
+See [this example
+server](https://github.com/tvastar/goat/blob/master/cmd/goat/goat.go)
+for how to set up your service.
 
