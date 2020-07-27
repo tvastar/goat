@@ -49,6 +49,9 @@ type Provider struct {
 	// Config should specify endpoints and such
 	oauth2.Config
 
+	// UsePKCE specifies that the provider users PKCE.
+	UsePKCE bool
+
 	// Paths should specify the endpoints for the Goat
 	// server. This should be unique and not shared between
 	// providers.
@@ -59,10 +62,19 @@ type Provider struct {
 	AuthURLParams map[string]string
 }
 
-func (p *Provider) authCodeOptions() []oauth2.AuthCodeOption {
+func (p *Provider) authCodeOptions(verifier, challenge, method string) []oauth2.AuthCodeOption {
 	opts := []oauth2.AuthCodeOption{oauth2.AccessTypeOffline}
 	for k, v := range p.AuthURLParams {
 		opts = append(opts, oauth2.SetAuthURLParam(k, v))
+	}
+	if verifier != "" {
+		opts = append(opts, oauth2.SetAuthURLParam("code_verifier", verifier))
+	}
+	if challenge != "" {
+		opts = append(opts, oauth2.SetAuthURLParam("code_challenge", challenge))
+	}
+	if method != "" {
+		opts = append(opts, oauth2.SetAuthURLParam("code_challenge_method", method))
 	}
 	return opts
 }
@@ -179,12 +191,12 @@ func (h Handler) handleConsent(r *http.Request, user string, p *Provider) (inter
 		return nil, errors.New("missing redirect_url"), http.StatusBadRequest
 	}
 
-	state := fmt.Sprintf("%x-%x", rand.Int63(), rand.Int63())
-	if err := h.Sessions.Set(r.Context(), p.Name, state, []byte(redirectURL)); err != nil {
+	state, challenge, method, err := h.saveSession(r.Context(), p, redirectURL)
+	if err != nil {
 		return nil, err, http.StatusInternalServerError
 	}
 
-	url := p.Config.AuthCodeURL(state, p.authCodeOptions()...)
+	url := p.Config.AuthCodeURL(state, p.authCodeOptions("", challenge, method)...)
 	return url, nil, http.StatusTemporaryRedirect
 }
 
@@ -195,13 +207,13 @@ func (h Handler) handleCode(r *http.Request, user string, p *Provider) (interfac
 		return nil, errors.New("missing state or code"), http.StatusBadRequest
 	}
 
-	redirectURL, err := h.Sessions.Get(r.Context(), p.Name, state)
+	redirectURL, verifier, err := h.getSession(r.Context(), p, state)
 	if err != nil {
 		err = errors.Wrap(err, "bad state")
 		return nil, err, http.StatusBadRequest
 	}
 
-	token, err := p.Config.Exchange(r.Context(), code, p.authCodeOptions()...)
+	token, err := p.Config.Exchange(r.Context(), code, p.authCodeOptions(verifier, "", "")...)
 	if err != nil {
 		err = errors.Wrap(err, "token exchange")
 		return nil, err, http.StatusBadRequest
@@ -285,4 +297,46 @@ func (h Handler) saveToken(ctx context.Context, user string, p *Provider, token 
 		return errors.Wrap(err, "saving token")
 	}
 	return nil
+}
+
+func (h Handler) saveSession(ctx context.Context, p *Provider, redirectURL string) (state, challenge, method string, err error) {
+	state = fmt.Sprintf("%x-%x", rand.Int63(), rand.Int63())
+	toSave := sessionState{RedirectURL: redirectURL}
+
+	if p.UsePKCE {
+		pkce, err := newPKCEInfo()
+		if err != nil {
+			return "", "", "", err
+		}
+		challenge = pkce.challenge
+		method = pkce.method
+		toSave.Verifier = pkce.verifier
+	}
+
+	data, err := json.Marshal(toSave)
+	if err != nil {
+		return "", "", "", err
+	}
+	if err = h.Sessions.Set(ctx, p.Name, state, data); err != nil {
+		return "", "", "", err
+	}
+	return state, challenge, method, nil
+}
+
+func (h Handler) getSession(ctx context.Context, p *Provider, state string) (redirectURL, verifier string, err error) {
+	data, err := h.Sessions.Get(ctx, p.Name, state)
+	if err != nil {
+		return "", "", err
+	}
+
+	var saved sessionState
+	if err = json.Unmarshal(data, &saved); err != nil {
+		return "", "", err
+	}
+	return saved.RedirectURL, saved.Verifier, nil
+}
+
+type sessionState struct {
+	Verifier    string `json:"v"`
+	RedirectURL string `json:"r"`
 }
